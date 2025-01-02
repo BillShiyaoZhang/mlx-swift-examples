@@ -143,6 +143,12 @@ public class ModelRegistry: @unchecked Sendable {
         overrideTokenizer: "PreTrainedTokenizer",
         defaultPrompt: "why is the sky blue?"
     )
+    
+    static public let qwen32b4bit = ModelConfiguration(
+        id: "mlx-community/Qwen2.5-32B-Instruct-4bit",
+        overrideTokenizer: "PreTrainedTokenizer",
+        defaultPrompt: "why is the sky blue?"
+    )
 
     static public let openelm270m4bit = ModelConfiguration(
         id: "mlx-community/OpenELM-270M-Instruct",
