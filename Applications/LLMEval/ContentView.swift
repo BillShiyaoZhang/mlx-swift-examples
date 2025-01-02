@@ -160,11 +160,11 @@ class LLMEvaluator {
 
     /// This controls which model loads. `phi3_5_4bit` is one of the smaller ones, so this will fit on
     /// more devices.
-    let modelConfiguration = ModelRegistry.phi3_5_4bit
+    let modelConfiguration = ModelRegistry.qwen32b4bit
 
     /// parameters controlling the output
     let generateParameters = GenerateParameters(temperature: 0.6)
-    let maxTokens = 240
+    let maxTokens = 4000
 
     /// update the display every N tokens -- 4 looks like it updates continuously
     /// and is low overhead.  observed ~15% reduction in tokens/s when updating
@@ -183,7 +183,7 @@ class LLMEvaluator {
     func load() async throws -> ModelContainer {
         switch loadState {
         case .idle:
-            // limit the buffer cache
+            // limit the buffer cache, 20 MB
             MLX.GPU.set(cacheLimit: 20 * 1024 * 1024)
 
             let modelContainer = try await LLMModelFactory.shared.loadContainer(
@@ -200,7 +200,7 @@ class LLMEvaluator {
             }
 
             self.modelInfo =
-                "Loaded \(modelConfiguration.id).  Weights: \(numParams / (1024*1024))M"
+            "Loaded \(modelConfiguration.id).  Weights: \(numParams / (1024*1024))M. Path: \(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appending(component: "huggingface").absoluteString)"
             loadState = .loaded(modelContainer)
             return modelContainer
 
