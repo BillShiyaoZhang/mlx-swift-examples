@@ -144,8 +144,32 @@ public class ModelRegistry: @unchecked Sendable {
         defaultPrompt: "why is the sky blue?"
     )
     
-    static public let qwen32b4bit = ModelConfiguration(
+    static public let Qwen72bInstruct4bit = ModelConfiguration(
+        id: "mlx-community/Qwen2.5-72B-Instruct-4bit",
+        overrideTokenizer: "PreTrainedTokenizer",
+        defaultPrompt: "why is the sky blue?"
+    )
+    
+    static public let Qwen32bInstruct4bit = ModelConfiguration(
         id: "mlx-community/Qwen2.5-32B-Instruct-4bit",
+        overrideTokenizer: "PreTrainedTokenizer",
+        defaultPrompt: "why is the sky blue?"
+    )
+    
+    static public let Qwen32bInstruct8bit = ModelConfiguration(
+        id: "mlx-community/Qwen2.5-32B-Instruct-8bit",
+        overrideTokenizer: "PreTrainedTokenizer",
+        defaultPrompt: "why is the sky blue?"
+    )
+    
+    static public let Qwen14bInstructBf16 = ModelConfiguration(
+        id: "mlx-community/Qwen2.5-14B-Instruct-bf16",
+        overrideTokenizer: "PreTrainedTokenizer",
+        defaultPrompt: "why is the sky blue?"
+    )
+    
+    static public let Qwen14bInstruct8bit = ModelConfiguration(
+        id: "mlx-community/Qwen2.5-14B-Instruct-8bit",
         overrideTokenizer: "PreTrainedTokenizer",
         defaultPrompt: "why is the sky blue?"
     )

@@ -19,8 +19,19 @@ struct ContentView: View {
         case plain, markdown
         var id: Self { self }
     }
+    enum modelOption: String, CaseIterable, Identifiable {
+        case Qwen32bInstruct4bit,
+             Qwen32bInstruct8bit
+//             Qwen14bInstruct8bit,
+//             Qwen14bInstructBf16,
+//             Qwen72bInstruct4bit
+             
+        var id: Self { self }
+    }
 
     @State private var selectedDisplayStyle = displayStyle.markdown
+    
+    @State private var selectedModelOption = modelOption.Qwen32bInstruct4bit
 
     var body: some View {
         VStack(alignment: .leading) {
@@ -40,6 +51,28 @@ struct ContentView: View {
                             .frame(maxHeight: 20)
                         Spacer()
                     }
+                    Picker("", selection: $selectedModelOption) {
+                        ForEach(modelOption.allCases, id: \.self) { option in
+                            Text(option.rawValue.capitalized)
+                                .tag(option)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    #if os(visionOS)
+                        .frame(maxWidth: 250)
+                    #else
+                        .frame(maxWidth: 150)
+                    #endif
+                    .onChange(of: selectedModelOption) {
+                        Task {
+                            llm.modelContainer = nil
+                            MLX.GPU.clearCache()
+                            llm.loadState = .idle
+                            llm.setModelConfiguration(modelOption: selectedModelOption.rawValue)
+                             _ = try? await llm.load()
+                         }
+                    }
+                    Spacer()
                     Picker("", selection: $selectedDisplayStyle) {
                         ForEach(displayStyle.allCases, id: \.self) { option in
                             Text(option.rawValue.capitalized)
@@ -135,6 +168,8 @@ struct ContentView: View {
 
     private func generate() {
         Task {
+//            llm.loadState = .idle
+//            llm.setModelConfiguration(modelOption: selectedModelOption.rawValue)
             await llm.generate(prompt: prompt)
         }
     }
@@ -160,7 +195,23 @@ class LLMEvaluator {
 
     /// This controls which model loads. `phi3_5_4bit` is one of the smaller ones, so this will fit on
     /// more devices.
-    let modelConfiguration = ModelRegistry.qwen32b4bit
+    var modelConfiguration = ModelRegistry.Qwen32bInstruct4bit
+    func setModelConfiguration(modelOption: String) {
+        switch  modelOption {
+//        case "Qwen14bInstructBf16":
+//            modelConfiguration = ModelRegistry.Qwen14bInstructBf16
+//        case "Qwen14bInstruct8bit":
+//            modelConfiguration = ModelRegistry.Qwen14bInstruct8bit
+        case "Qwen32bInstruct8bit":
+            modelConfiguration = ModelRegistry.Qwen32bInstruct8bit
+        case "Qwen32bInstruct4bit":
+            modelConfiguration = ModelRegistry.Qwen32bInstruct4bit
+//        case "Qwen72bInstruct4bit":
+//            modelConfiguration = ModelRegistry.Qwen72bInstruct4bit
+        default:
+            modelConfiguration = ModelRegistry.Qwen32bInstruct4bit
+        }
+    }
 
     /// parameters controlling the output
     let generateParameters = GenerateParameters(temperature: 0.6)
@@ -175,6 +226,8 @@ class LLMEvaluator {
         case idle
         case loaded(ModelContainer)
     }
+    
+    var modelContainer: ModelContainer? = nil
 
     var loadState = LoadState.idle
 
@@ -183,10 +236,10 @@ class LLMEvaluator {
     func load() async throws -> ModelContainer {
         switch loadState {
         case .idle:
-            // limit the buffer cache, 20 MB
-            MLX.GPU.set(cacheLimit: 20 * 1024 * 1024)
+            // limit the buffer cache, 1 GB
+            MLX.GPU.set(cacheLimit: 1024 * 1024 * 1024)
 
-            let modelContainer = try await LLMModelFactory.shared.loadContainer(
+            modelContainer = try await LLMModelFactory.shared.loadContainer(
                 configuration: modelConfiguration
             ) {
                 [modelConfiguration] progress in
@@ -195,14 +248,14 @@ class LLMEvaluator {
                         "Downloading \(modelConfiguration.name): \(Int(progress.fractionCompleted * 100))%"
                 }
             }
-            let numParams = await modelContainer.perform { context in
+            let numParams = await modelContainer!.perform { context in
                 context.model.numParameters()
             }
 
             self.modelInfo =
             "Loaded \(modelConfiguration.id).  Weights: \(numParams / (1024*1024))M. Path: \(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appending(component: "huggingface").absoluteString)"
-            loadState = .loaded(modelContainer)
-            return modelContainer
+            loadState = .loaded(modelContainer!)
+            return modelContainer!
 
         case .loaded(let modelContainer):
             return modelContainer
